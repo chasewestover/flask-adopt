@@ -1,13 +1,13 @@
 """Flask app for adopt app."""
 
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, flash
 from models import Pet
 
 from flask_debugtoolbar import DebugToolbarExtension
 
 from models import db, connect_db
 
-from forms import AddPetForm
+from forms import AddPetForm, EditPetForm
 
 app = Flask(__name__)
 
@@ -22,38 +22,55 @@ connect_db(app)
 # Having the Debug Toolbar show redirects explicitly is often useful;
 # however, if you want to turn it off, you can uncomment this line:
 #
-# app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 toolbar = DebugToolbarExtension(app)
 
 
+db.drop_all()
+db.create_all()
+p1 = Pet(name="Spots",species="dog", age='young', photo_url='https://tse3.mm.bing.net/th?id=OIP.qCtOqxrCFWQmBnwwEkJyxQHaHa&pid=Api')
+db.session.add(p1)
+db.session.commit()
+
 @app.route("/")
 def show_homepage():
-
-    db.drop_all()
-    db.create_all()
-
-    p1 = Pet(name="Spots",species="dog", age='young', photo_url='https://tse3.mm.bing.net/th?id=OIP.qCtOqxrCFWQmBnwwEkJyxQHaHa&pid=Api')
-    db.session.add(p1)
-    db.session.commit()
 
     pets = Pet.query.all()
     return render_template("homepage.html", pets=pets)
 
 
-@app.route("/add")
+@app.route("/add", methods=["GET", "POST"])
 def show_pet_form():
     """ render the add pet form """
     form = AddPetForm()
 
-    # if form.validate_on_submit():
-    #     user.name = form.name.data
-    #     user.email = form.email.data
-    #     db.session.commit()
-    #     flash(f"User {uid} updated!")
-    #     return redirect(f"/users/{uid}/edit")
-
-    # else:
-    #     return render_template("user_form.html", form=form)
+    if form.validate_on_submit():
+        name = form.name.data
+        species = form.species.data
+        photo_url = form.photo_url.data or None
+        age = form.age.data
+        notes = form.notes.data
+        new_pet = Pet(name=name, species=species, age=age, photo_url=photo_url, notes=notes)
+        db.session.add(new_pet)
+        db.session.commit()
+        flash(f"Pet {name} added!")
+        return redirect("/")
 
     return render_template("add_pet_form.html", form = form)
+
+@app.route("/<int:pet_id>", methods=["GET", "POST"])
+def show_pet_details(pet_id):
+    """ render pet page"""
+
+    pet = Pet.query.get(pet_id)
+    form = EditPetForm(obj=pet)
+
+    if form.validate_on_submit():
+        pet.photo_url = form.photo_url.data or None
+        pet.notes = form.notes.data
+        pet.available = form.available.data
+        db.session.commit()
+        return redirect("/")
+
+    return render_template("pet_detail.html", pet=pet, form=form)
