@@ -38,9 +38,10 @@ toolbar = DebugToolbarExtension(app)
 #when re-running the server empty the db and create one pet
 db.drop_all()
 db.create_all()
-p1 = Pet(name="Spots",species="dog", age='young', photo_url='https://tse3.mm.bing.net/th?id=OIP.qCtOqxrCFWQmBnwwEkJyxQHaHa&pid=Api')
+p1 = Pet(name="Spots", species="dog", age='young', photo_url='https://tse3.mm.bing.net/th?id=OIP.qCtOqxrCFWQmBnwwEkJyxQHaHa&pid=Api')
 db.session.add(p1)
 db.session.commit()
+
 
 @app.before_first_request
 def refresh_credentials():
